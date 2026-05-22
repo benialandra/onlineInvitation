@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, Cambria, serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Natural Tones Theme Colors */
+  --color-wedding-gold: #6b856c; /* Soft Sage Green */
+  --color-wedding-gold-light: #94ab95; /* Light Eucalyptus Green */
+  --color-wedding-gold-dark: #445445; /* Deep Pine Green */
+  --color-wedding-cream: #faf8f4; /* Sand Linen background */
+  --color-wedding-champagne: #ebe7de; /* Soft Clay/Beige Sand */
+  --color-natural-clay: #9c8e76; /* Warm Taupe/Stone */
+  --color-natural-leaf: #324133; /* Dark Forest text */
+}
+
+body {
+  background-color: var(--color-wedding-cream);
+  color: #2b332c; /* Forest Charcoal text instead of pure black */
+  font-family: var(--font-sans);
+}
+
+/* Custom fade scrollbar in Sage Green colors */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f4f2eb;
+}
+::-webkit-scrollbar-thumb {
+  background: #6b856c80;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6b856c;
+}

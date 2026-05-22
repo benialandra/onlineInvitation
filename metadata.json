@@ -1,0 +1,6 @@
+{
+  "name": "Wedding Online Store",
+  "description": "Platform e-commerce jasa undangan pernikahan online dengan sistem order otomatis tanpa login, masa kedaluwarsa pembayaran 5 menit, dan cek pesanan dengan kode unik.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
