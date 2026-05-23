@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, ShoppingCart, Shield, ArrowRight, ArrowLeft, RefreshCw, Smartphone, QrCode, Mail, MessageSquare, AlertTriangle, CheckCircle, Heart } from 'lucide-react';
+import { Clock, ShoppingCart, Shield, ArrowRight, ArrowLeft, RefreshCw, Smartphone, QrCode, Mail, MessageSquare, AlertTriangle, CheckCircle, Heart, Upload, Image, Trash2, X } from 'lucide-react';
 import { Theme, Order, Notification } from '../types';
 import { formatRupiah } from '../data/themes';
 
@@ -35,6 +35,35 @@ export default function CheckoutSection({
   const [weddingLocation, setWeddingLocation] = useState('');
   const [musicChoice, setMusicChoice] = useState('Beautiful in White - Westlife');
   const [customMessage, setCustomMessage] = useState('');
+
+  // Uploaded photo states
+  const [photoUrl, setPhotoUrl] = useState<string>('');
+  const [additionalPhotos, setAdditionalPhotos] = useState<string[]>([]);
+  const [isDraggingPrimary, setIsDraggingPrimary] = useState(false);
+  const [isDraggingSecondary, setIsDraggingSecondary] = useState(false);
+
+  const handlePrimaryFile = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setPhotoUrl(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSecondaryFiles = (files: FileList) => {
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setAdditionalPhotos((prev) => [...prev, e.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   // Local calculation of countdown time left
   const [timeLeft, setTimeLeft] = useState<number>(300); // 5 minutes in seconds
@@ -95,7 +124,9 @@ export default function CheckoutSection({
       expiresAt,
       uniqueCode,
       musicChoice,
-      customMessage
+      customMessage,
+      photoUrl,
+      additionalPhotos
     };
 
     onOrderCreated(newOrder);
@@ -384,6 +415,132 @@ export default function CheckoutSection({
                     onChange={(e) => setCustomMessage(e.target.value)}
                     className="w-full text-sm p-3 border border-gray-200 rounded-xl focus:outline-hidden focus:border-wedding-gold font-sans"
                   />
+                </div>
+              </div>
+
+              {/* PHOTO UPLOAD AND GALLERY SETUP PANEL */}
+              <div className="space-y-4 pt-3 border-t border-gray-100">
+                <div>
+                  <h4 className="font-display font-bold text-sm text-gray-900">3. Unggah Foto Dokumentasi (Otomatis Diterapkan)</h4>
+                  <p className="text-xs text-gray-400">Unggah foto Anda untuk langsung diterapkan ke tema undangan baru saat pembayaran berhasil</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Photo 1: Primary Cover Couple Photo */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 block">Foto Utama / Sampul Undangan</label>
+                    
+                    {photoUrl ? (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-200 group bg-gray-50 flex items-center justify-center">
+                        <img src={photoUrl} alt="Cover Utama" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-150 flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setPhotoUrl('')}
+                            className="p-2.5 bg-red-650 hover:bg-red-700 text-white rounded-full transition shadow-md text-xs font-bold flex items-center gap-1.5"
+                          >
+                            <Trash2 size={14} />
+                            <span>Hapus Foto Utama</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDraggingPrimary(true); }}
+                        onDragLeave={() => setIsDraggingPrimary(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingPrimary(false);
+                          if (e.dataTransfer.files?.length) {
+                            handlePrimaryFile(e.dataTransfer.files[0]);
+                          }
+                        }}
+                        className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 ${
+                          isDraggingPrimary ? 'border-wedding-gold bg-wedding-champagne/15' : 'border-gray-200 hover:border-wedding-gold/60 bg-gray-50/50'
+                        }`}
+                        onClick={() => {
+                          const el = document.getElementById('primary-photo-input');
+                          if (el) el.click();
+                        }}
+                      >
+                        <input
+                          id="primary-photo-input"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.length) {
+                              handlePrimaryFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        <Upload size={22} className="text-gray-400" />
+                        <span className="text-xs font-semibold text-gray-705 block">Tarik & lepas atau cari gambar</span>
+                        <span className="text-[10px] text-gray-450 font-medium block">JPG, PNG atau WEBP berkualitas tinggi</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Photo 2: Secondary Additional Grid Gallery */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 block">Foto Galeri Tambahan (Hingga 4 foto)</label>
+                    
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingSecondary(true); }}
+                      onDragLeave={() => setIsDraggingSecondary(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingSecondary(false);
+                        if (e.dataTransfer.files?.length) {
+                          handleSecondaryFiles(e.dataTransfer.files);
+                        }
+                      }}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 ${
+                        isDraggingSecondary ? 'border-wedding-gold bg-wedding-champagne/15' : 'border-gray-200 hover:border-wedding-gold/60 bg-gray-50/50'
+                      }`}
+                      onClick={() => {
+                        const el = document.getElementById('secondary-photo-input');
+                        if (el) el.click();
+                      }}
+                    >
+                      <input
+                        id="secondary-photo-input"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.length) {
+                            handleSecondaryFiles(e.target.files);
+                          }
+                        }}
+                      />
+                      <Image size={22} className="text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-705 block">Unggah Foto Galeri Pendukung</span>
+                      <span className="text-[10px] text-gray-450 block">Klik di sini untuk memilih beberapa gambar sekaligus</span>
+                    </div>
+
+                    {additionalPhotos.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 pt-1">
+                        {additionalPhotos.map((img, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-150 group">
+                            <img src={img} alt={`Galeri ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdditionalPhotos(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-650 text-white p-1 rounded-full shadow-xs transition"
+                              title="Hapus foto ini"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

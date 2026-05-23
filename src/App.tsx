@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ShoppingBag, Eye, Heart, HelpCircle, Layers, Calendar, ClipboardCheck, Clock, ShieldAlert, Award, FileSpreadsheet, LockKeyhole, ArrowRight, Activity } from 'lucide-react';
+import { Sparkles, ShoppingBag, Eye, Heart, HelpCircle, Layers, Calendar, ClipboardCheck, Clock, ShieldAlert, Award, FileSpreadsheet, LockKeyhole, ArrowRight, Activity, Settings } from 'lucide-react';
 import { Theme, Order, Notification } from './types';
 import { THEMES_DATA, formatRupiah } from './data/themes';
-import Flowchart from './components/Flowchart';
 import ThemePreviewModal from './components/ThemePreviewModal';
 import CheckoutSection from './components/CheckoutSection';
 import MyOrdersSection from './components/MyOrdersSection';
 import NotificationSimulator from './components/NotificationSimulator';
+import AdminPanel from './components/AdminPanel';
 
 export default function App() {
   // Navigation Navigation tab state
-  const [activeTab, setActiveTab] = useState<'katalog' | 'order-saya' | 'flowchart'>('katalog');
+  const [activeTab, setActiveTab] = useState<'katalog' | 'order-saya' | 'admin'>('katalog');
   
   // Theme state with views count tracking
   const [themes, setThemes] = useState<Theme[]>(() => {
@@ -77,6 +77,7 @@ export default function App() {
 
   // Previewing Theme modal
   const [previewingTheme, setPreviewingTheme] = useState<Theme | null>(null);
+  const [previewCustomData, setPreviewCustomData] = useState<Partial<Order> | undefined>(undefined);
 
   // Notifications Queue Simulator
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -170,6 +171,7 @@ export default function App() {
       return t;
     });
     setThemes(updated);
+    setPreviewCustomData(undefined);
     setPreviewingTheme(theme);
   };
 
@@ -224,6 +226,14 @@ export default function App() {
   const handleUpdateOrderDetails = (updatedOrder: Order) => {
     const updated = orders.map(o => (o.id === updatedOrder.id ? updatedOrder : o));
     setOrders(updated);
+  };
+
+  const handleAddTheme = (newTheme: Theme) => {
+    setThemes((prev) => [...prev, newTheme]);
+  };
+
+  const handleDeleteTheme = (themeId: string) => {
+    setThemes((prev) => prev.filter((t) => t.id !== themeId));
   };
 
   // Filter themes based on interactive category selections
@@ -316,17 +326,17 @@ export default function App() {
 
             <button
               onClick={() => {
-                setActiveTab('flowchart');
+                setActiveTab('admin');
                 setSelectedOrderingTheme(null);
               }}
               className={`px-5 py-2.5 rounded-full text-xs font-semibold font-display transition duration-200 flex items-center gap-1.5 ${
-                activeTab === 'flowchart'
+                activeTab === 'admin'
                   ? 'bg-wedding-gold-dark text-white shadow-xs'
                   : 'text-gray-600 hover:text-gray-950'
               }`}
             >
-              <Layers size={14} />
-              <span>Alur & Flowchart</span>
+              <Settings size={14} />
+              <span>Halaman Admin</span>
             </button>
           </nav>
 
@@ -378,15 +388,15 @@ export default function App() {
 
         <button
           onClick={() => {
-            setActiveTab('flowchart');
+            setActiveTab('admin');
             setSelectedOrderingTheme(null);
           }}
           className={`flex flex-col items-center gap-1 text-[10px] font-semibold ${
-            activeTab === 'flowchart' ? 'text-wedding-gold-dark' : 'text-gray-400 hover:text-gray-700'
+            activeTab === 'admin' ? 'text-wedding-gold-dark' : 'text-gray-400 hover:text-gray-700'
           }`}
         >
-          <Layers size={18} />
-          <span>Alur & Flow</span>
+          <Settings size={18} />
+          <span>Admin</span>
         </button>
       </div>
 
@@ -432,20 +442,13 @@ export default function App() {
 
                     <div className="flex flex-wrap items-center gap-3 pt-2">
                       <button
-                        onClick={() => setActiveTab('flowchart')}
-                        className="bg-wedding-gold hover:bg-wedding-gold-dark text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-md uppercase tracking-wider flex items-center gap-1.5 transition"
-                      >
-                        <span>Lihat Alur & Flowchart</span>
-                        <ArrowRight size={13} />
-                      </button>
-
-                      <button
                         onClick={() => {
                           setActiveTab('order-saya');
                         }}
-                        className="bg-transparent border border-wedding-gold-light/30 hover:bg-wedding-gold-light/10 text-wedding-gold-light hover:text-white text-xs font-semibold py-3 px-5 rounded-xl transition"
+                        className="bg-wedding-gold hover:bg-wedding-gold-dark text-white text-xs font-semibold py-3 px-6 rounded-xl shadow-md uppercase tracking-wider flex items-center gap-2 transition"
                       >
-                        Kelola Undangan Saya
+                        <span>Kelola Undangan Saya</span>
+                        <ArrowRight size={13} />
                       </button>
                     </div>
                   </div>
@@ -559,17 +562,23 @@ export default function App() {
                   onUpdateOrder={handleUpdateOrderDetails}
                   onOpenInvitationPreview={(themeId, customData) => {
                     const themeObj = themes.find(t => t.id === themeId) || themes[0];
-                    // Open modal simulation but with customizable names
-                    setPreviewingTheme(themeObj);
+                    // Open modal simulation but with customizable names, photos and details
+                    setPreviewCustomData(customData);
+                    setPreviewingTheme({ ...themeObj, style: themeObj.style } as Theme);
                   }}
                   dummyCode="WD-74621"
                 />
               </div>
             )}
 
-            {activeTab === 'flowchart' && (
+            {activeTab === 'admin' && (
               <div className="py-2 animate-fadeIn">
-                <Flowchart />
+                <AdminPanel
+                  themes={themes}
+                  onAddTheme={handleAddTheme}
+                  onDeleteTheme={handleDeleteTheme}
+                  onBackToKatalog={() => setActiveTab('katalog')}
+                />
               </div>
             )}
           </>
@@ -593,8 +602,6 @@ export default function App() {
             <button onClick={() => { setActiveTab('katalog'); setSelectedOrderingTheme(null); }} className="hover:text-white transition">Katalog Tema</button>
             <span>•</span>
             <button onClick={() => { setActiveTab('order-saya'); setSelectedOrderingTheme(null); }} className="hover:text-white transition">Order Saya</button>
-            <span>•</span>
-            <button onClick={() => { setActiveTab('flowchart'); setSelectedOrderingTheme(null); }} className="hover:text-white transition">Alur & Flowchart</button>
           </div>
         </div>
       </footer>
@@ -603,10 +610,15 @@ export default function App() {
       {previewingTheme && (
         <ThemePreviewModal
           theme={previewingTheme}
-          onClose={() => setPreviewingTheme(null)}
+          customData={previewCustomData}
+          onClose={() => {
+            setPreviewingTheme(null);
+            setPreviewCustomData(undefined);
+          }}
           onOrder={() => {
             const theme = previewingTheme;
             setPreviewingTheme(null);
+            setPreviewCustomData(undefined);
             handleInitiateOrder(theme);
           }}
         />

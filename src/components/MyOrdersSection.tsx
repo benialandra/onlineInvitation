@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, Calendar, MapPin, Heart, Music, Check, Settings, Users, Share2, Clipboard, Edit, Download, ExternalLink, Bookmark, UserCheck, AlertCircle, Save } from 'lucide-react';
+import { Key, Calendar, MapPin, Heart, Music, Check, Settings, Users, Share2, Clipboard, Edit, Download, ExternalLink, Bookmark, UserCheck, AlertCircle, Save, QrCode, Upload, Image, Trash2, X } from 'lucide-react';
 import { Order, RSVP } from '../types';
 import { formatRupiah } from '../data/themes';
 
@@ -33,6 +33,36 @@ export default function MyOrdersSection({
   const [customMessage, setCustomMessage] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
+  // Uploaded photo states for dynamic edit uploader inside Dashboard
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [additionalPhotos, setAdditionalPhotos] = useState<string[]>([]);
+  const [isDraggingPrimary, setIsDraggingPrimary] = useState(false);
+  const [isDraggingSecondary, setIsDraggingSecondary] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handlePrimaryFile = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setPhotoUrl(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSecondaryFiles = (files: FileList) => {
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setAdditionalPhotos((prev) => [...prev, e.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Mock RSVP data for the simulation dashboard
   const [rsvpList, setRsvpList] = useState<RSVP[]>([
     { id: '1', orderId: '', name: 'Bapak Ahmad & Keluarga', guests: 4, attendance: 'yes', message: 'Selamat membina keluarga sakinah mawaddah warahmah Zaky & Rara. Semoga penuh limpahan berkah!', createdAt: '2026-05-22T04:20:00Z' },
@@ -65,6 +95,8 @@ export default function MyOrdersSection({
       setWeddingLocation(found.weddingLocation);
       setMusicChoice(found.musicChoice);
       setCustomMessage(found.customMessage || '');
+      setPhotoUrl(found.photoUrl || '');
+      setAdditionalPhotos(found.additionalPhotos || []);
     } else {
       setErrorMessage('Kode Akses salah atau pesanan Anda belum dibayar/sudah kedaluwarsa.');
       setSelectedOrder(null);
@@ -85,7 +117,9 @@ export default function MyOrdersSection({
       weddingTime,
       weddingLocation,
       musicChoice,
-      customMessage
+      customMessage,
+      photoUrl,
+      additionalPhotos
     };
 
     onUpdateOrder(updated);
@@ -231,6 +265,110 @@ export default function MyOrdersSection({
           {activeTab === 'details' && (
             <form onSubmit={handleSaveChanges} className="p-6 sm:p-8 space-y-6">
               
+              {/* QR CODE GENERATOR & LIVE LINK PORTLET WITH GLASSMORPHISM EFFECT */}
+              <div className="relative overflow-hidden bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl p-5 sm:p-6 shadow-xl shadow-wedding-gold/5 ring-1 ring-black/5 before:absolute before:inset-0 before:bg-gradient-to-tr before:from-wedding-champagne/15 before:to-transparent before:-z-10">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative z-10">
+                  
+                  {/* Column 1: Scannable QR Code Image */}
+                  <div className="md:col-span-3 flex flex-col items-center text-center space-y-2.5">
+                    <div className="bg-white/85 p-3 rounded-2xl border border-white shadow-md relative flex items-center justify-center transition duration-200 hover:scale-[1.02]">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                          `${window.location.origin}${window.location.pathname}?view=invitation&code=${selectedOrder.uniqueCode}`
+                        )}`}
+                        alt="Scannable QR Code"
+                        className="w-32 h-32 rounded-lg"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded-full border border-wedding-gold shadow-xs">
+                        <Heart size={11} className="text-wedding-gold fill-wedding-gold animate-pulse" />
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-wedding-gold-dark tracking-wider uppercase flex items-center gap-1.5 bg-wedding-gold/10 px-2 py-0.5 rounded-md">
+                      <QrCode size={11} /> Scan QR Undangan
+                    </span>
+                  </div>
+
+                  {/* Column 2: Details & Actions */}
+                  <div className="md:col-span-9 space-y-3">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-semibold text-gray-950 flex items-center gap-1.5 leading-none">
+                        <span>Link Undangan Online Anda Aktif</span>
+                        <span className="px-2 py-0.5 bg-green-500/15 text-green-700 text-[9px] font-bold rounded uppercase tracking-wider font-mono">
+                          Live
+                        </span>
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        Undangan digital Anda dapat disebarkan sekarang juga. Setiap perubahan data atau foto di bawah ini akan diperbarui langsung secara real-time.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${window.location.origin}${window.location.pathname}?view=invitation&code=${selectedOrder.uniqueCode}`}
+                        className="flex-1 text-xs font-mono p-3 bg-gray-55 border border-gray-200 rounded-xl text-gray-600 focus:outline-hidden block truncate font-semibold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = `${window.location.origin}${window.location.pathname}?view=invitation&code=${selectedOrder.uniqueCode}`;
+                          navigator.clipboard.writeText(link);
+                          setCopySuccess(true);
+                          setTimeout(() => setCopySuccess(false), 2000);
+                        }}
+                        className={`px-4 py-3 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition ${
+                          copySuccess ? 'bg-emerald-600 text-white' : 'bg-[#445445] hover:bg-[#324133] text-white'
+                        }`}
+                      >
+                        {copySuccess ? <Check size={14} /> : <Clipboard size={14} />}
+                        <span>{copySuccess ? 'Copied' : 'Salin'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = `${window.location.origin}${window.location.pathname}?view=invitation&code=${selectedOrder.uniqueCode}`;
+                          const text = `Halo, Kami mengundang Anda untuk merayakan kebahagiaan kami. Silakan buka tautan undangan digital resmi kami berikut untuk rincian lengkap acara: ${link}`;
+                          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="bg-[#25D366] hover:bg-[#128C7E] text-white text-[11px] font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Share2 size={12} />
+                        <span>Bagikan ke WhatsApp</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+                            `${window.location.origin}${window.location.pathname}?view=invitation&code=${selectedOrder.uniqueCode}`
+                          )}`;
+                          window.open(link, '_blank');
+                        }}
+                        className="bg-zinc-800 hover:bg-zinc-900 border border-zinc-700 text-white text-[11px] font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Download size={12} />
+                        <span>Download QR Code (HQ)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenInvitationPreview(selectedOrder.themeId, selectedOrder)}
+                        className="bg-wedding-champagne hover:bg-wedding-champagne/80 text-wedding-gold-dark text-[11px] font-extrabold px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 border border-wedding-gold-light/25 shadow-sm"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Buka Preview Layar Penuh</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-105">
                 <div className="space-y-4">
                   <h4 className="font-display font-bold text-sm text-gray-900 border-b border-gray-100 pb-2">mempelai pria</h4>
@@ -329,6 +467,130 @@ export default function MyOrdersSection({
                     onChange={(e) => setWeddingLocation(e.target.value)}
                     className="w-full text-sm p-3 border border-gray-200 rounded-xl focus:outline-hidden focus:border-wedding-gold font-sans"
                   />
+                </div>
+              </div>
+
+              {/* PHOTO COVERS AND GALLERY MANAGEMENT SUB-FORM */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div>
+                  <h4 className="font-display font-bold text-sm text-gray-900">Kelola Media Foto Undangan</h4>
+                  <p className="text-xs text-gray-450 font-sans">Ubah atau unggah foto Anda yang tampil di cover utama serta galeri dokumentasi pendukung di undangan digital.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                  {/* Photo 1: Main wallpaper photo */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 block">Foto Utama / Wallpaper Sampul</label>
+                    {photoUrl ? (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-250 group bg-gray-50 flex items-center justify-center">
+                        <img src={photoUrl} alt="Cover" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition duration-150 flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setPhotoUrl('')}
+                            className="p-2 bg-red-650 hover:bg-red-700 text-white rounded-full transition shadow-md text-xs font-bold flex items-center gap-1"
+                          >
+                            <Trash2 size={13} />
+                            <span>Hapus / Ganti Foto</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDraggingPrimary(true); }}
+                        onDragLeave={() => setIsDraggingPrimary(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingPrimary(false);
+                          if (e.dataTransfer.files?.length) {
+                            handlePrimaryFile(e.dataTransfer.files[0]);
+                          }
+                        }}
+                        className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 ${
+                          isDraggingPrimary ? 'border-wedding-gold bg-wedding-champagne/15' : 'border-gray-200 hover:border-wedding-gold/60 bg-gray-50/50'
+                        }`}
+                        onClick={() => {
+                          const el = document.getElementById('dash-primary-image-input');
+                          if (el) el.click();
+                        }}
+                      >
+                        <input
+                          id="dash-primary-image-input"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.length) {
+                              handlePrimaryFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        <Upload size={20} className="text-gray-400" />
+                        <span className="text-xs font-semibold text-gray-700 block">Tarik & lepas atau cari gambar baru</span>
+                        <span className="text-[10px] text-gray-400 block font-mono">JPG, PNG, atau WEBP</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Photo 2: Gallery supporting elements */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 block">Foto Galeri Kebahagiaan Kami (Maks 4)</label>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingSecondary(true); }}
+                      onDragLeave={() => setIsDraggingSecondary(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingSecondary(false);
+                        if (e.dataTransfer.files?.length) {
+                          handleSecondaryFiles(e.dataTransfer.files);
+                        }
+                      }}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 ${
+                        isDraggingSecondary ? 'border-wedding-gold bg-wedding-champagne/15' : 'border-gray-200 hover:border-wedding-gold/60 bg-gray-50/50'
+                      }`}
+                      onClick={() => {
+                        const el = document.getElementById('dash-gallery-image-input');
+                        if (el) el.click();
+                      }}
+                    >
+                      <input
+                        id="dash-gallery-image-input"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.length) {
+                            handleSecondaryFiles(e.target.files);
+                          }
+                        }}
+                      />
+                      <Image size={20} className="text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-700 block">Tambahkan Foto Galeri Baru</span>
+                      <span className="text-[10px] text-gray-400 block font-mono">Pilih satu atau lebih gambar sekaligus</span>
+                    </div>
+
+                    {additionalPhotos.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 pt-1">
+                        {additionalPhotos.map((img, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-150 group bg-gray-100">
+                            <img src={img} alt={`Galeri ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdditionalPhotos(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="absolute top-1 right-1 bg-red-650 hover:bg-red-700 text-white p-1 rounded-full shadow-xs transition"
+                              title="Hapus foto ini"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

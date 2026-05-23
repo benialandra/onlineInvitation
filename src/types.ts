@@ -47,6 +47,8 @@ export interface Order {
   uniqueCode: string; // Authentication / tracking token
   musicChoice: string; // Name of track
   customMessage?: string;
+  photoUrl?: string; // Custom uploaded main/couple photo (Base64 or URL)
+  additionalPhotos?: string[]; // Optional secondary uploaded photos
 }
 
 export interface RSVP {

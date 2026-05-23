@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, MapPin, Heart, Music, Music2, Share2, Send, CheckCircle, Users, Sparkles, Volume2, VolumeX } from 'lucide-react';
-import { Theme } from '../types';
+import { Theme, Order } from '../types';
 
 interface ThemePreviewModalProps {
   theme: Theme;
   onClose: () => void;
   onOrder: () => void;
+  customData?: Partial<Order>;
 }
 
 interface Wish {
@@ -16,7 +17,7 @@ interface Wish {
   time: string;
 }
 
-export default function ThemePreviewModal({ theme, onClose, onOrder }: ThemePreviewModalProps) {
+export default function ThemePreviewModal({ theme, onClose, onOrder, customData }: ThemePreviewModalProps) {
   const [isOpen, setIsOpen] = useState(false); // Has the user clicked "Buka Undangan"
   const [isPlaying, setIsPlaying] = useState(false); // Music playing state
   const [rsvpName, setRsvpName] = useState('');
@@ -26,11 +27,18 @@ export default function ThemePreviewModal({ theme, onClose, onOrder }: ThemePrev
   const [isRsvpSubmitted, setIsRsvpSubmitted] = useState(false);
   
   // Custom wishes for simulation
-  const [wishes, setWishes] = useState<Wish[]>([
-    { name: 'Risma & Heru', relation: 'Sahabat Pengantin', message: 'Selamat menikmati indahnya bahtera rumah tangga baru ya Bella & Aris! Semoga samawa selalu dan cepat dikaruniai buah hati. Amin.', attendance: 'yes', time: '2 menit lalu' },
-    { name: 'Dokter Danu', relation: 'Keluarga', message: 'Barakallahu lakum wa baraka alaikum. Sungguh bahagia melihat kalian bersatu. Selamat menempuh lembaran baru!', attendance: 'yes', time: '1 jam lalu' },
-    { name: 'Arief Prasetyo', relation: 'Teman Kantor', message: 'Happy Wedding, bro! Semoga menjadi keluarga yang sakinah. Maaf belum bisa hadir karena dinas luar kota, tapi doa terbaik dari jauh.', attendance: 'no', time: '3 jam lalu' },
-  ]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
+
+  // Initialize wishes based on custom or default names
+  useEffect(() => {
+    const groomNick = customData?.groomNickname || (theme.id === 'modern-minimal' ? 'Adrian' : theme.id === 'royal-elegancy' ? 'Wijaya' : 'Aris');
+    const brideNick = customData?.brideNickname || (theme.id === 'modern-minimal' ? 'Bella' : theme.id === 'royal-elegancy' ? 'Dewi' : 'Bella');
+    setWishes([
+      { name: 'Risma & Heru', relation: 'Sahabat Pengantin', message: `Selamat menikmati indahnya bahtera rumah tangga baru ya ${brideNick} & ${groomNick}! Semoga samawa selalu dan cepat dikaruniai buah hati. Amin.`, attendance: 'yes', time: '2 menit lalu' },
+      { name: 'Dokter Danu', relation: 'Keluarga', message: 'Barakallahu lakum wa baraka alaikum. Sungguh bahagia melihat kalian bersatu. Selamat menempuh lembaran baru!', attendance: 'yes', time: '1 jam lalu' },
+      { name: 'Arief Prasetyo', relation: 'Teman Kantor', message: 'Happy Wedding! Semoga menjadi keluarga yang sakinah. Maaf belum bisa hadir karena dinas luar kota, tapi doa terbaik dari jauh.', attendance: 'no', time: '3 jam lalu' },
+    ]);
+  }, [customData, theme]);
 
   // Audio wave animation simulation
   const [audioBars, setAudioBars] = useState<number[]>([15, 30, 20, 40, 10, 25, 35, 10, 30, 15]);
@@ -66,14 +74,22 @@ export default function ThemePreviewModal({ theme, onClose, onOrder }: ThemePrev
     }, 3000);
   };
 
-  // Preset names for custom theme feels
+  // Preset names or custom user inputted values
   const names = {
-    groom: theme.id === 'modern-minimal' ? 'Adrian Saputra' : theme.id === 'royal-elegancy' ? 'Raden Wijaya, S.T.' : 'Aris Setiadi',
-    groomNick: theme.id === 'modern-minimal' ? 'Adrian' : theme.id === 'royal-elegancy' ? 'Wijaya' : 'Aris',
-    bride: theme.id === 'modern-minimal' ? 'Bella Amanda' : theme.id === 'royal-elegancy' ? 'Dewi Puspita, M.B.A.' : 'Bella Rosita',
-    brideNick: theme.id === 'modern-minimal' ? 'Bella' : theme.id === 'royal-elegancy' ? 'Dewi' : 'Bella',
-    weddingDate: 'Minggu, 18 Oktober 2026',
-    address: theme.id === 'royal-elegancy' ? 'Grand Ballroom Hotel Mulia, Jakarta Timur' : 'Pine Forest Villa, Lembang, Bandung'
+    groom: customData?.groomName || (theme.id === 'modern-minimal' ? 'Adrian Saputra' : theme.id === 'royal-elegancy' ? 'Raden Wijaya, S.T.' : 'Aris Setiadi'),
+    groomNick: customData?.groomNickname || (theme.id === 'modern-minimal' ? 'Adrian' : theme.id === 'royal-elegancy' ? 'Wijaya' : 'Aris'),
+    bride: customData?.brideName || (theme.id === 'modern-minimal' ? 'Bella Amanda' : theme.id === 'royal-elegancy' ? 'Dewi Puspita, M.B.A.' : 'Bella Rosita'),
+    brideNick: customData?.brideNickname || (theme.id === 'modern-minimal' ? 'Bella' : theme.id === 'royal-elegancy' ? 'Dewi' : 'Bella'),
+    weddingDate: customData?.weddingDate ? (() => {
+      try {
+        const d = new Date(customData.weddingDate);
+        if (isNaN(d.getTime())) return customData.weddingDate;
+        return d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      } catch (e) {
+        return customData.weddingDate;
+      }
+    })() : 'Minggu, 18 Oktober 2026',
+    address: customData?.weddingLocation || (theme.id === 'royal-elegancy' ? 'Grand Ballroom Hotel Mulia, Jakarta Timur' : 'Pine Forest Villa, Lembang, Bandung')
   };
 
   const style = theme.style;
@@ -191,7 +207,7 @@ export default function ThemePreviewModal({ theme, onClose, onOrder }: ThemePrev
             <div className="space-y-12 pb-24 animate-fadeIn">
               
               {/* HERO WALLPAPER SECTION */}
-              <div className="relative h-[45vh] bg-cover bg-center flex items-end p-6" style={{ backgroundImage: `url(${theme.imageUrl})` }}>
+              <div className="relative h-[45vh] bg-cover bg-center flex items-end p-6" style={{ backgroundImage: `url(${customData?.photoUrl || theme.imageUrl})` }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                 <div className="relative text-white space-y-2 w-full text-center">
                   <span className="text-wedding-gold-light font-serif italic text-sm">Save the Date</span>
@@ -244,6 +260,27 @@ export default function ThemePreviewModal({ theme, onClose, onOrder }: ThemePrev
                   </div>
                 </div>
               </div>
+
+              {/* DYNAMIC PHOTO GALLERY FOR UPLOADED PHOTOS */}
+              {customData?.additionalPhotos && customData.additionalPhotos.length > 0 && (
+                <div className="px-6 space-y-4">
+                  <h3 className="text-center font-serif text-xl text-gray-900 font-bold tracking-tight">
+                    Galeri Kebahagiaan Kami
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+                    {customData.additionalPhotos.map((photo, i) => (
+                      <div key={i} className="aspect-[4/3] rounded-2xl overflow-hidden border border-wedding-gold/15 shadow-sm hover:scale-[1.02] transition duration-150">
+                        <img 
+                          src={photo} 
+                          alt={`Uploaded gallery ${i + 1}`} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer" 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* TIMELINE / AGENDA */}
               <div className="px-6 max-w-md mx-auto space-y-6">
